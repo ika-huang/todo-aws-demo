@@ -1,0 +1,53 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+} from '@aws-sdk/lib-dynamodb';
+import { APIGatewayEvent } from 'aws-lambda';
+import { randomUUID } from 'crypto';
+
+const client = new DynamoDBClient({});
+const ddbDocClient = DynamoDBDocumentClient.from(client);
+
+export async function main(event: APIGatewayEvent) {
+  try {
+    const body = JSON.parse(event.body || '{}');
+    const { userId, todoId } = event.pathParameters || {};
+    const commentId = randomUUID();
+    const { Item: todo } = await ddbDocClient.send(new GetCommand({
+      TableName: process.env.TODO_TABLE_NAME,
+      Key: {
+        todoId,
+        userId,
+      },
+    }));
+    if (!todo) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          message: 'Todo not found!',
+        }),
+      };
+    };
+    const putItem = {
+      commentId,
+      todoId,
+      userId: body.userId,
+      content: body.content,
+      createdAt: new Date().getTime(),
+    };
+    await ddbDocClient.send(
+      new PutCommand({
+        TableName: process.env.COMMENT_TABLE_NAME,
+        Item: putItem,
+      })
+    );
+    return {
+      statusCode: 200,
+      body: JSON.stringify(putItem),
+    };
+  } catch (err: unknown) {
+    return { statusCode: 500, body: JSON.stringify({ message: err instanceof Error ? err.message : 'some error happened' }) };
+  }
+}
