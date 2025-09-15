@@ -6,16 +6,27 @@ import {
   NativeAttributeValue,
 } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayEvent } from 'aws-lambda';
+import {
+  updateTodoInput,
+  updateTodoSchema,
+  validateErrorMessage,
+} from '../schemas/todo';
+import { z } from 'zod';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const { userId, todoId } = event.pathParameters || {};
-    const body: { [key: string]: unknown } = event.body ? JSON.parse(event.body) : {};
+    // const { userId, todoId } = event.pathParameters || {};
+    // const pathParameters = event.pathParameters || {};
+    // const body: { [key: string]: unknown } = event.body ? JSON.parse(event.body) : {};
+    const { userId, todoId, title, description, status }: updateTodoInput = updateTodoSchema.parse({
+      ...(event.pathParameters || {}),
+      ...(event.body ? JSON.parse(event.body) : {}),
+    });
     const now = Date.now();
-    const { title, description, status } = body;
+    // const { title, description, status } = body;
     const expressionAttributeNames : { [key: string]: string } = {
       '#updatedAt': 'updatedAt',
     };
@@ -27,8 +38,8 @@ export async function main(event: APIGatewayEvent) {
       new GetCommand({
         TableName: process.env.TODO_TABLE_NAME,
         Key: {
-          todoId,
-          userId,
+          todoId: todoId,
+          userId: userId,
         },
       })
     );
@@ -66,8 +77,8 @@ export async function main(event: APIGatewayEvent) {
     const result = await ddbDocClient.send(new UpdateCommand({
       TableName: process.env.TODO_TABLE_NAME,
       Key: {
-        userId,
-        todoId,
+        userId: userId,
+        todoId: todoId,
       },
       UpdateExpression: `set ${updateExpression.join(', ')}`,
       ExpressionAttributeNames: expressionAttributeNames,
@@ -79,6 +90,10 @@ export async function main(event: APIGatewayEvent) {
       body: JSON.stringify(result.Attributes),
     };
   } catch (err: unknown) {
+    if (err instanceof z.ZodError) {
+      console.log(err.issues)
+      return validateErrorMessage(err);
+    }
     return {
       statusCode: 500,
       body: JSON.stringify({

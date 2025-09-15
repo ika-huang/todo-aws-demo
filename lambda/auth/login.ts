@@ -3,17 +3,18 @@ import {
   InitiateAuthCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { APIGatewayEvent } from 'aws-lambda';
+import {
+  loginInput,
+  loginSchema,
+  validateErrorMessage,
+} from '../schemas/auth';
 import { z } from 'zod';
 
 const client = new CognitoIdentityProviderClient({});
 
 export async function main(event: APIGatewayEvent) {
   try {
-    // const body = JSON.parse(event.body || '{}');
-    const body = z.object({
-      email: z.email().nonempty(),
-      password: z.string().nonempty(),
-    }).parse(JSON.parse(event.body || '{}'));
+    const body: loginInput = loginSchema.parse(JSON.parse(event.body || '{}'));
     const command = new InitiateAuthCommand({
       AuthFlow: 'USER_PASSWORD_AUTH',
       ClientId: process.env.CLIENT_ID,
@@ -31,12 +32,7 @@ export async function main(event: APIGatewayEvent) {
     };
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
-      return {
-        statusCode: 422,
-        body: JSON.stringify({
-          message: err.issues,
-        }),
-      };
+      return validateErrorMessage(err);
     };
     return {
       statusCode: 500,

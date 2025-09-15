@@ -4,6 +4,11 @@ import {
   AdminConfirmSignUpCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { APIGatewayEvent } from 'aws-lambda';
+import {
+  registerInput,
+  registerSchema,
+  validateErrorMessage,
+} from '../schemas/auth';
 import { z } from 'zod';
 
 const client = new CognitoIdentityProviderClient({});
@@ -11,10 +16,7 @@ const client = new CognitoIdentityProviderClient({});
 export async function main(event: APIGatewayEvent) {
   try {
     // const body = JSON.parse(event.body || '{}');
-    const body = z.object({
-      email: z.email().nonempty(),
-      password: z.string().min(8).nonempty(),
-    }).parse(JSON.parse(event.body || '{}'));
+    const body: registerInput = registerSchema.parse(JSON.parse(event.body || '{}'));
     const command = new SignUpCommand({
       ClientId: process.env.CLIENT_ID,
       Username: body.email,
@@ -31,6 +33,14 @@ export async function main(event: APIGatewayEvent) {
       body: JSON.stringify({ message: 'User registered', data: result }),
     };
   } catch (err: unknown) {
-    return { statusCode: 500, body: JSON.stringify({ message: err instanceof Error ? err.message : 'some error happened' }) };
+  if (err instanceof z.ZodError) {
+    return validateErrorMessage(err);
+  }
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: err instanceof Error ? err.message : 'some error happened'
+      }),
+    };
   }
 }

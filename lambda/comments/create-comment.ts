@@ -6,14 +6,24 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayEvent } from 'aws-lambda';
 import { randomUUID } from 'crypto';
+import {
+  createCommentInput,
+  createCommentSchema,
+  validateErrorMessage,
+} from '../schemas/comments';
+import { z } from 'zod';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const body = JSON.parse(event.body || '{}');
-    const { userId, todoId } = event.pathParameters || {};
+    // const body = JSON.parse(event.body || '{}');
+    // const { userId, todoId } = event.pathParameters || {};
+    const { todoId, userId, content }: createCommentInput = createCommentSchema.parse({
+      ...(event.pathParameters || {}),
+      ...(JSON.parse(event.body || '{}')),
+    });
     const commentId = randomUUID();
     const { Item: todo } = await ddbDocClient.send(new GetCommand({
       TableName: process.env.TODO_TABLE_NAME,
@@ -33,8 +43,8 @@ export async function main(event: APIGatewayEvent) {
     const putItem = {
       commentId,
       todoId,
-      userId: body.userId,
-      content: body.content,
+      userId,
+      content,
       createdAt: new Date().getTime(),
     };
     await ddbDocClient.send(
@@ -48,6 +58,14 @@ export async function main(event: APIGatewayEvent) {
       body: JSON.stringify(putItem),
     };
   } catch (err: unknown) {
-    return { statusCode: 500, body: JSON.stringify({ message: err instanceof Error ? err.message : 'some error happened' }) };
+    if (err instanceof z.ZodError) {
+      return validateErrorMessage(err);
+    };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: err instanceof Error ? err.message : 'some error happened',
+      }),
+    };
   }
 }

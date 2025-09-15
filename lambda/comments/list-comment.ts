@@ -5,13 +5,20 @@ import {
   QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayEvent } from 'aws-lambda';
+import {
+  listCommentInput,
+  listCommentSchema,
+  validateErrorMessage,
+} from '../schemas/comments';
+import { z } from 'zod';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const { todoId, userId } = event.pathParameters || {};
+    // const { todoId, userId } = event.pathParameters || {};
+    const { todoId, userId }: listCommentInput = listCommentSchema.parse(event.pathParameters || {});
     const { Item: todo } = await ddbDocClient.send(new GetCommand({
       TableName: process.env.TODO_TABLE_NAME,
       Key: {
@@ -43,6 +50,9 @@ export async function main(event: APIGatewayEvent) {
       body: JSON.stringify(comments),
     };
   } catch (err: unknown) {
+    if (err instanceof z.ZodError) {
+      return validateErrorMessage(err);
+    };
     return {
       statusCode: 500,
       body: JSON.stringify({

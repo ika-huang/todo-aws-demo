@@ -1,10 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
-import {
-  Function,
-  Runtime,
-  Code,
-} from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
   LambdaIntegration,
@@ -24,13 +21,10 @@ export class TodoStack extends cdk.Stack {
     const { todoTable, todoApi } = props;
 
     // lambda
-    const createTodoLambda = new Function(this, 'CreateTodoLambda', {
+    const createTodoLambda = new NodejsFunction(this, 'CreateTodoLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/todos'),
-      handler: 'create-todo.main',
-      environment: {
-        TODO_TABLE_NAME: todoTable.tableName,
-      },
+      entry: 'lambda/todos/create-todo.ts',
+      handler: 'main',
       initialPolicy: [
         new PolicyStatement({
           actions: [
@@ -40,13 +34,13 @@ export class TodoStack extends cdk.Stack {
             '*'
           ]
         })
-      ]
+      ],
     });
 
-    const listTodoLambda = new Function(this, 'listTodoLambda', {
+    const listTodoLambda = new NodejsFunction(this, 'listTodoLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/todos'),
-      handler: 'list-todo.main',
+      entry: 'lambda/todos/list-todo.ts',
+      handler: 'main',
       environment: {
         TODO_TABLE_NAME: todoTable.tableName,
       },
@@ -62,10 +56,10 @@ export class TodoStack extends cdk.Stack {
       ]
     });
 
-    const getTodoLambda = new Function(this, 'getTodoLambda', {
+    const getTodoLambda = new NodejsFunction(this, 'getTodoLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/todos'),
-      handler: 'get-todo.main',
+      entry: 'lambda/todos/get-todo.ts',
+      handler: 'main',
       environment: {
         TODO_TABLE_NAME: todoTable.tableName,
       },
@@ -81,10 +75,10 @@ export class TodoStack extends cdk.Stack {
       ]
     });
 
-    const updateTodoLambda = new Function(this, 'updateTodoLambda', {
+    const updateTodoLambda = new NodejsFunction(this, 'updateTodoLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/todos'),
-      handler: 'update-todo.main',
+      entry: 'lambda/todos/update-todo.ts',
+      handler: 'main',
       environment: {
         TODO_TABLE_NAME: todoTable.tableName,
       },
@@ -101,10 +95,10 @@ export class TodoStack extends cdk.Stack {
       ]
     });
 
-    const deleteTodoLambda = new Function(this, 'deleteTodoLambda', {
+    const deleteTodoLambda = new NodejsFunction(this, 'deleteTodoLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/todos'),
-      handler: 'delete-todo.main',
+      entry: 'lambda/todos/delete-todo.ts',
+      handler: 'main',
       environment: {
         TODO_TABLE_NAME: todoTable.tableName,
       },

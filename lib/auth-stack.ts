@@ -1,10 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
-import {
-  Function,
-  Runtime,
-  Code,
-} from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
   LambdaIntegration,
@@ -49,10 +46,10 @@ export class AuthStack extends cdk.Stack {
     });
 
     // lambda
-    const registerLambda = new Function(this, 'RegisterLambda', {
+    const registerLambda = new NodejsFunction(this, 'RegisterLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/auth'),
-      handler: 'register.main',
+      entry: 'lambda/auth/register.ts',
+      handler: 'main',
       environment: {
         USER_POOL_ID: this.userPool.userPoolId,
         CLIENT_ID: this.userPoolClient.userPoolClientId,
@@ -70,10 +67,10 @@ export class AuthStack extends cdk.Stack {
       ],
     });
 
-    const loginLambda = new Function(this, 'LoginLambda', {
+    const loginLambda = new NodejsFunction(this, 'LoginLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/auth'),
-      handler: 'login.main',
+      entry: 'lambda/auth/login.ts',
+      handler: 'main',
       environment: {
         USER_POOL_ID: this.userPool.userPoolId,
         CLIENT_ID: this.userPoolClient.userPoolClientId,
