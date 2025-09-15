@@ -5,13 +5,20 @@ import {
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayEvent } from 'aws-lambda';
+import {
+  deleteTodoInput,
+  deleteTodoSchema,
+  validateErrorMessage,
+} from '../schemas/todo';
+import { z } from 'zod';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const { userId, todoId } = event.pathParameters || {};
+    // const { userId, todoId } = event.pathParameters || {};
+    const { userId, todoId }: deleteTodoInput = deleteTodoSchema.parse(event.pathParameters || {});
     const { Item: todo } = await ddbDocClient.send(
       new GetCommand({
         TableName: process.env.TODO_TABLE_NAME,
@@ -41,6 +48,14 @@ export async function main(event: APIGatewayEvent) {
       body: 'delete todo success!',
     };
   } catch (err: unknown) {
-    return { statusCode: 500, body: JSON.stringify({ message: err instanceof Error ? err.message : 'some error happened' }) };
-  }
+    if (err instanceof z.ZodError) {
+      return validateErrorMessage(err);
+    };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: err instanceof Error ? err.message : 'some error happened'
+      }),
+    };
+  };
 }

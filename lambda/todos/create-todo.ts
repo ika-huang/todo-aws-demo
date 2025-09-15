@@ -2,13 +2,19 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayEvent } from 'aws-lambda';
 import { randomUUID } from 'crypto';
+import {
+  createTodoInput,
+  createTodoSchema,
+  validateErrorMessage,
+} from '../schemas/todo';
+import { z } from 'zod';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const body = JSON.parse(event.body || '{}');
+    const body: createTodoInput = createTodoSchema.parse(JSON.parse(event.body || '{}'));
     const todoId = randomUUID();
     const now = new Date().getTime();
     const putItem = {
@@ -32,6 +38,9 @@ export async function main(event: APIGatewayEvent) {
       body: JSON.stringify(putItem),
     };
   } catch (err: unknown) {
+    if (err instanceof z.ZodError) {
+      return validateErrorMessage(err);
+    };
     return {
       statusCode: 500,
       body: JSON.stringify({

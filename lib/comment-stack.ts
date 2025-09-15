@@ -1,10 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
-import {
-  Function,
-  Runtime,
-  Code,
-} from 'aws-cdk-lib/aws-lambda';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
   LambdaIntegration,
@@ -25,10 +22,10 @@ export class CommentStack extends cdk.Stack {
     const { commentTable, todoTable, commentApi } = props;
 
     // lambda
-    const createCommentLambda = new Function(this, 'CreateCommentLambda', {
+    const createCommentLambda = new NodejsFunction(this, 'CreateCommentLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/comments'),
-      handler: 'create-comment.main',
+      entry: 'lambda/comments/create-comment.ts',
+      handler: 'main',
       environment: {
         TODO_TABLE_NAME: todoTable.tableName,
         COMMENT_TABLE_NAME: commentTable.tableName,
@@ -45,10 +42,10 @@ export class CommentStack extends cdk.Stack {
         })
       ]
     });
-    const listCommentLambda = new Function(this, 'ListCommentLambda', {
+    const listCommentLambda = new NodejsFunction(this, 'ListCommentLambda', {
       runtime: Runtime.NODEJS_20_X,
-      code: Code.fromAsset('lambda/comments'),
-      handler: 'list-comment.main',
+      entry: 'lambda/comments/list-comment.ts',
+      handler: 'main',
       environment: {
         TODO_TABLE_NAME: todoTable.tableName,
         COMMENT_TABLE_NAME: commentTable.tableName,
