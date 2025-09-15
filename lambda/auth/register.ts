@@ -4,12 +4,17 @@ import {
   AdminConfirmSignUpCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { APIGatewayEvent } from 'aws-lambda';
+import { z } from 'zod';
 
 const client = new CognitoIdentityProviderClient({});
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const body = JSON.parse(event.body || '{}');
+    // const body = JSON.parse(event.body || '{}');
+    const body = z.object({
+      email: z.email().nonempty(),
+      password: z.string().min(8).nonempty(),
+    }).parse(JSON.parse(event.body || '{}'));
     const command = new SignUpCommand({
       ClientId: process.env.CLIENT_ID,
       Username: body.email,
