@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import {
-  RestApi
+  RestApi,
 } from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 
@@ -23,13 +23,13 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'AuthApiUrl', {
-      value: this.authApi.url
+      value: this.authApi.url,
     });
     new cdk.CfnOutput(this, 'TodoApiUrl', {
-      value: this.todoApi.url
+      value: this.todoApi.url,
     });
     new cdk.CfnOutput(this, 'CommentApiUrl', {
-      value: this.commentApi.url
+      value: this.commentApi.url,
     });
   }
 }

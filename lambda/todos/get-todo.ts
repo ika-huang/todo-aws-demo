@@ -13,7 +13,17 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 
 export async function main(event: APIGatewayEvent) {
   try {
-    const { userId, todoId }: getTodoInput = getTodoSchema.parse(event.pathParameters || {});
+    const claims = event.requestContext?.authorizer?.claims;
+    if (!claims) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: 'Unauthorized'
+        }),
+      }; 
+    };
+    const { sub: userId } = claims;
+    const { todoId }: getTodoInput = getTodoSchema.parse(event.pathParameters || {});
     const { Item: todo } = await ddbDocClient.send(
       new GetCommand({
         TableName: process.env.TODO_TABLE_NAME,

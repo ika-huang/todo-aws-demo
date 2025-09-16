@@ -15,17 +15,16 @@ import { Construct } from 'constructs';
 
 interface AuthStackProps extends cdk.StackProps {
   userTable: Table;
-  authApi: RestApi;
 }
 
 export class AuthStack extends cdk.Stack {
   public readonly userPool: UserPool;
   public readonly userPoolClient: UserPoolClient;
+  public readonly authApi: RestApi;
 
   constructor(scope: Construct, id: string, props: AuthStackProps) {
+    
     super(scope, id, props);
-
-    const { authApi } = props;
 
     // cognito
     this.userPool = new UserPool(this, 'TodosUserPool', {
@@ -88,7 +87,10 @@ export class AuthStack extends cdk.Stack {
     });
 
     // apigateway
-    const authResource = authApi.root.addResource('auth');
+    this.authApi = new RestApi(this, 'AuthApi', {
+      restApiName: `${process.env.APP_STACK_NAME}-AuthService`,
+    });
+    const authResource = this.authApi.root.addResource('auth');
     authResource.addResource('register').addMethod(
       'POST',
       new LambdaIntegration(registerLambda)
@@ -97,5 +99,9 @@ export class AuthStack extends cdk.Stack {
       'POST',
       new LambdaIntegration(loginLambda)
     );
+
+    new cdk.CfnOutput(this, 'AuthApiUrl', {
+      value: this.authApi.url,
+    });
   }
 }

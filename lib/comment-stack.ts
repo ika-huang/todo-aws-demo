@@ -1,10 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import { Table } from 'aws-cdk-lib/aws-dynamodb';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
   LambdaIntegration,
+  CognitoUserPoolsAuthorizer,
+  AuthorizationType,
 } from 'aws-cdk-lib/aws-apigateway';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
@@ -12,14 +15,16 @@ import { Construct } from 'constructs';
 interface CommentStackProps extends cdk.StackProps {
   commentTable: Table;
   todoTable: Table;
-  commentApi: RestApi;
+  userPool: UserPool;
 }
 
 export class CommentStack extends cdk.Stack {
+  public readonly commentApi: RestApi;
+
   constructor(scope: Construct, id: string, props: CommentStackProps) {
     super(scope, id, props);
 
-    const { commentTable, todoTable, commentApi } = props;
+    const { commentTable, todoTable, userPool } = props;
 
     // lambda
     const createCommentLambda = new NodejsFunction(this, 'CreateCommentLambda', {
@@ -63,17 +68,36 @@ export class CommentStack extends cdk.Stack {
       ]
     });
     
+    // authorization
+    const authorizer = new CognitoUserPoolsAuthorizer(this, 'CommentAuthorizer', {
+      cognitoUserPools: [
+        userPool,
+      ],
+    });
+
     // apigateway
-    const commentResource = commentApi.root.addResource('comments');
+    this.commentApi = new RestApi(this, 'CommentApi', {
+      restApiName: `${process.env.APP_STACK_NAME}-CommentService`,
+    });
+    const commentResource = this.commentApi.root.addResource('comments');
     const commentTodoResource = commentResource.addResource('todos').addResource('{todoId}');
-    const commentTodoUserResource = commentTodoResource.addResource('user').addResource('{userId}');
-    commentTodoUserResource.addMethod(
+    commentTodoResource.addMethod(
       'POST',
-      new LambdaIntegration(createCommentLambda),
+      new LambdaIntegration(createCommentLambda), {
+        authorizer,
+        authorizationType: AuthorizationType.COGNITO,
+      },
     );
-    commentTodoUserResource.addMethod(
+    commentTodoResource.addMethod(
       'GET',
-      new LambdaIntegration(listCommentLambda),
+      new LambdaIntegration(listCommentLambda), {
+        authorizer,
+        authorizationType: AuthorizationType.COGNITO,
+      },
     );
+
+    new cdk.CfnOutput(this, 'CommentApiUrl', {
+      value: this.commentApi.url,
+    });
   }
 }
