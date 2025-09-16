@@ -1,12 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayEvent } from 'aws-lambda';
-import {
-  listTodoInput,
-  listTodoSchema,
-  validateErrorMessage,
-} from '../schemas/todo';
-import { z } from 'zod';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
@@ -14,7 +8,16 @@ const ddbDocClient = DynamoDBDocumentClient.from(client);
 export async function main(event: APIGatewayEvent) {
   try {
     // const userId = event.pathParameters?.userId;
-    const { userId }: listTodoInput = listTodoSchema.parse(event.pathParameters || {});
+    const claims = event.requestContext?.authorizer?.claims;
+    if (!claims) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: 'Unauthorized'
+        }),
+      }; 
+    };
+    const { sub: userId } = claims;
     const { Items: todos } = await ddbDocClient.send(
       new QueryCommand({
         TableName: process.env.TODO_TABLE_NAME,
@@ -33,9 +36,6 @@ export async function main(event: APIGatewayEvent) {
       body: JSON.stringify(todos),
     };
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return validateErrorMessage(err);
-    }
     return {
       statusCode: 500,
       body: JSON.stringify({

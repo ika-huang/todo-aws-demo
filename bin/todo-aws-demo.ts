@@ -9,11 +9,15 @@ dotenv.config();
 const app = new cdk.App();
 
 const databaseStack = new libStack.DatabaseStack(app, 'DatabaseStack');
-const apiGatewayStack = new libStack.ApiGatewayStack(app, 'ApiGatewayStack');
+// const apiGatewayStack = new libStack.ApiGatewayStack(app, 'ApiGatewayStack');
+
+const authStack =  new libStack.AuthStack(app, 'AuthStack', {
+  userTable: databaseStack.userTable,
+});
 
 new libStack.TodoStack(app, 'TodoStack', {
   todoTable: databaseStack.todoTable,
-  todoApi: apiGatewayStack.todoApi,
+  userPool: authStack.userPool,
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,
    * but a single synthesized template can be deployed anywhere. */
@@ -28,12 +32,8 @@ new libStack.TodoStack(app, 'TodoStack', {
 
   /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
-new libStack.AuthStack(app, 'AuthStack', {
-  userTable: databaseStack.userTable,
-  authApi: apiGatewayStack.authApi,
-});
 new libStack.CommentStack(app, 'CommentStack', {
   commentTable: databaseStack.commentTable,
   todoTable: databaseStack.todoTable,
-  commentApi: apiGatewayStack.commentApi,
+  userPool: authStack.userPool,
 });

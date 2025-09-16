@@ -1,4 +1,4 @@
-import { z, ZodError } from "zod";
+import { z, ZodError } from 'zod';
 
 export const loginSchema = z.object({
   email: z.email().nonempty(),

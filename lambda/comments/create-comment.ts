@@ -20,7 +20,17 @@ export async function main(event: APIGatewayEvent) {
   try {
     // const body = JSON.parse(event.body || '{}');
     // const { userId, todoId } = event.pathParameters || {};
-    const { todoId, userId, content }: createCommentInput = createCommentSchema.parse({
+    const claims = event.requestContext?.authorizer?.claims;
+    if (!claims) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: 'Unauthorized'
+        }),
+      }; 
+    };
+    const { sub: userId } = claims;
+    const { todoId, content }: createCommentInput = createCommentSchema.parse({
       ...(event.pathParameters || {}),
       ...(JSON.parse(event.body || '{}')),
     });

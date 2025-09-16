@@ -21,7 +21,17 @@ export async function main(event: APIGatewayEvent) {
     // const { userId, todoId } = event.pathParameters || {};
     // const pathParameters = event.pathParameters || {};
     // const body: { [key: string]: unknown } = event.body ? JSON.parse(event.body) : {};
-    const { userId, todoId, title, description, status }: updateTodoInput = updateTodoSchema.parse({
+    const claims = event.requestContext?.authorizer?.claims;
+    if (!claims) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: 'Unauthorized'
+        }),
+      }; 
+    };
+    const { sub: userId } = claims;
+    const { todoId, title, description, status }: updateTodoInput = updateTodoSchema.parse({
       ...(event.pathParameters || {}),
       ...(event.body ? JSON.parse(event.body) : {}),
     });

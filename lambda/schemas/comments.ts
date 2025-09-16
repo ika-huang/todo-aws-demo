@@ -1,13 +1,11 @@
-import { z, ZodError } from "zod";
+import { z, ZodError } from 'zod';
 
 export const createCommentSchema = z.object({
-  userId: z.string().nonempty(),
   todoId: z.string().nonempty(),
   content: z.string().min(1).nonempty(),
 });
 
 export const listCommentSchema = z.object({
-  userId: z.string().nonempty(),
   todoId: z.string().nonempty(),
 });
 
