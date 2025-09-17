@@ -8,24 +8,22 @@ import { APIGatewayEvent } from 'aws-lambda';
 import {
   listCommentInput,
   listCommentSchema,
-  validateErrorMessage,
 } from '../schemas/comments';
-import { z } from 'zod';
+import { lambdaResponse } from '../utils/response';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
+const {
+  response,
+  errorResponse,
+} = new lambdaResponse();
 
 export async function main(event: APIGatewayEvent) {
   try {
     // const { todoId, userId } = event.pathParameters || {};
     const claims = event.requestContext?.authorizer?.claims;
     if (!claims) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({
-          message: 'Unauthorized'
-        }),
-      }; 
+      return errorResponse('Unauthorized', 401);
     };
     const { sub: userId } = claims;
     const { todoId }: listCommentInput = listCommentSchema.parse(event.pathParameters || {});
@@ -37,12 +35,7 @@ export async function main(event: APIGatewayEvent) {
       },
     }));
     if (!todo) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({
-          message: 'Todo not found!',
-        }),
-      };
+      return errorResponse('Todo not found!', 404);
     };
     const { Items: comments } = await ddbDocClient.send(new QueryCommand({
       TableName: process.env.COMMENT_TABLE_NAME,
@@ -55,19 +48,8 @@ export async function main(event: APIGatewayEvent) {
         ':todoId': todoId,
       },
     }));
-    return {
-      statusCode: 200,
-      body: JSON.stringify(comments),
-    };
+    return response(comments);
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return validateErrorMessage(err);
-    };
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: err instanceof Error ? err.message : 'some error happened'
-      }),
-    };
+    return errorResponse(err);
   }
 }

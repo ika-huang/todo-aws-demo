@@ -9,12 +9,15 @@ import { APIGatewayEvent } from 'aws-lambda';
 import {
   updateTodoInput,
   updateTodoSchema,
-  validateErrorMessage,
 } from '../schemas/todo';
-import { z } from 'zod';
+import { lambdaResponse } from '../utils/response';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
+const {
+  response,
+  errorResponse,
+} = new lambdaResponse();
 
 export async function main(event: APIGatewayEvent) {
   try {
@@ -23,12 +26,7 @@ export async function main(event: APIGatewayEvent) {
     // const body: { [key: string]: unknown } = event.body ? JSON.parse(event.body) : {};
     const claims = event.requestContext?.authorizer?.claims;
     if (!claims) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({
-          message: 'Unauthorized'
-        }),
-      }; 
+      return errorResponse('Unauthorized', 401);
     };
     const { sub: userId } = claims;
     const { todoId, title, description, status }: updateTodoInput = updateTodoSchema.parse({
@@ -54,20 +52,10 @@ export async function main(event: APIGatewayEvent) {
       })
     );
     if (!todo) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({
-          message: 'Todo not found!',
-        }),
-      };
+      return errorResponse('Todo not found!', 404);
     };
     if (!title && !description && !status) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({
-          message: 'No fields to update!',
-        }),
-      };
+      return errorResponse('No fields to update!', 400);
     }
     if (title) {
       expressionAttributeNames['#title'] = 'title';
@@ -95,20 +83,8 @@ export async function main(event: APIGatewayEvent) {
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW',
     }));
-    return {
-      statusCode: 200,
-      body: JSON.stringify(result.Attributes),
-    };
+    return response(result.Attributes);
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      console.log(err.issues)
-      return validateErrorMessage(err);
-    }
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: err instanceof Error ? err.message : 'some error happened'
-      }),
-    };
+    return errorResponse(err);
   }
 }

@@ -5,23 +5,21 @@ import { randomUUID } from 'crypto';
 import {
   createTodoInput,
   createTodoSchema,
-  validateErrorMessage,
 } from '../schemas/todo';
-import { z } from 'zod';
+import { lambdaResponse } from '../utils/response';
 
 const client = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(client);
+const {
+  response,
+  errorResponse,
+} = new lambdaResponse();
 
 export async function main(event: APIGatewayEvent) {
   try {
     const claims = event.requestContext?.authorizer?.claims;
     if (!claims) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({
-          message: 'Unauthorized'
-        }),
-      }; 
+      return errorResponse('Unauthorized', 401);
     };
     const { sub: userId } = claims;
     const body: createTodoInput = createTodoSchema.parse(JSON.parse(event.body || '{}'));
@@ -43,19 +41,8 @@ export async function main(event: APIGatewayEvent) {
         Item: putItem,
       })
     );
-    return {
-      statusCode: 200,
-      body: JSON.stringify(putItem),
-    };
+    return response(putItem);
   } catch (err: unknown) {
-    if (err instanceof z.ZodError) {
-      return validateErrorMessage(err);
-    };
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: err instanceof Error ? err.message : 'some error happened',
-      }),
-    };
+    return errorResponse(err);
   }
 }
