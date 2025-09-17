@@ -5,6 +5,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
+  Cors,
   LambdaIntegration,
   CognitoUserPoolsAuthorizer,
   AuthorizationType,
@@ -78,6 +79,11 @@ export class CommentStack extends cdk.Stack {
     // apigateway
     this.commentApi = new RestApi(this, 'CommentApi', {
       restApiName: `${process.env.APP_STACK_NAME}-CommentService`,
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: Cors.DEFAULT_HEADERS,
+      },
     });
     const commentResource = this.commentApi.root.addResource('comments');
     const commentTodoResource = commentResource.addResource('todos').addResource('{todoId}');
