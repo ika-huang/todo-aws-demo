@@ -5,6 +5,7 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
+  Cors,
   LambdaIntegration,
   CognitoUserPoolsAuthorizer,
   AuthorizationType,
@@ -133,6 +134,11 @@ export class TodoStack extends cdk.Stack {
     // apigateway
     this.todoApi = new RestApi(this, 'TodoApi', {
       restApiName: `${process.env.APP_STACK_NAME}-TodoService`,
+      deploy: true,
+      defaultCorsPreflightOptions: {
+        allowOrigins: ['http://localhost:3000', 'http://localhost:3000/todos'],
+        allowMethods: Cors.ALL_METHODS,
+      },
     });
 
     const todosResource = this.todoApi.root.addResource('todos');

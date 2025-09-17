@@ -31,9 +31,15 @@ export async function main(event: APIGatewayEvent) {
         },
       })
     );
+    const corsHeaders = (origin = '*') => ({
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
+      'Access-Control-Allow-Methods': '*',
+    });
     return {
       statusCode: 200,
       body: JSON.stringify(todos),
+      headers: corsHeaders('*'),
     };
   } catch (err: unknown) {
     return {
