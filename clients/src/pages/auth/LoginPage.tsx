@@ -13,7 +13,7 @@ export default function Login() {
     try {
       await login(email, password);
       alert('登入成功');
-      navigate('/todos');
+      navigate('/');
     } catch (err: any) {
       alert('登入失敗: ' + err.message);
     }

@@ -6,7 +6,7 @@ import {
   del,
 } from 'aws-amplify/api';
 import {
-  todo,
+  Todo,
   TodosState,
 } from '../../interfaces/todos.interface';
 import { getToken } from '../../amplifyConfig';
@@ -14,27 +14,34 @@ import { getToken } from '../../amplifyConfig';
 export const useTodosStore = create<TodosState>((setState, getState) => ({
   todos: [],
   currentTodo: null,
+  loading: false,
 
-  createTodo: async() => {
+  createTodo: async({ title, description = '' }) => {
+    setState({ loading: true });
     const accessToken = await getToken();
     const { body } = await post({
       apiName: 'todosApi',
       path: '/todos',
       options: {
         body: {
-          message: 'Mow the lawn',
+          title,
+          description,
         },
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       },
     }).response;
-    // const { body } = await restOperation.response;
     const response = await body.json();
-    setState({ currentTodo: response });
+    setState({
+      currentTodo: response,
+      todos: [...getState().todos, response as unknown as Todo],
+      loading: false,
+    });
   },
 
   listTodos: async() => {
+    setState({ loading: true });
     const accessToken = await getToken();
     const { body } = await get({
       apiName: 'todosApi',
@@ -47,8 +54,7 @@ export const useTodosStore = create<TodosState>((setState, getState) => ({
     }).response;
     // const { body } = await restOperation.response;
     const response = await body.json() as [];
-    console.log(response)
-    setState({ todos: response });
+    setState({ todos: response, loading: false });
   },
 
   getTodo: async(id) => {
@@ -67,6 +73,7 @@ export const useTodosStore = create<TodosState>((setState, getState) => ({
   },
 
   updateTodo: async({ id, updateBody }) => {
+    setState({ loading: true });
     const accessToken = await getToken();
     const { body } = await put({
       apiName: 'todosApi',
@@ -79,10 +86,14 @@ export const useTodosStore = create<TodosState>((setState, getState) => ({
       },
     }).response;
     const response = await body.json();
-    setState({ currentTodo: response });
+    setState({
+      currentTodo: response,
+      loading: false,
+    });
   },
 
   deleteTodo: async(id) => {
+    setState({ loading: true });
     const accessToken = await getToken();
     const { body } = await del({
       apiName: 'todosApi',
@@ -94,6 +105,10 @@ export const useTodosStore = create<TodosState>((setState, getState) => ({
       },
     }).response;
     const response = await body.json();
-    setState({ currentTodo: response });
+    setState({
+      todos: getState().todos.filter((t) => t.todoId !== id),
+      currentTodo: response,
+      loading: false,
+    });
   },
 }))

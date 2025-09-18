@@ -16,14 +16,18 @@ Amplify.configure(<ResourcesConfig>{
   },
   API: {
     REST: {
+      authApi: {
+        endpoint: 'https://koy7bhzzkb.execute-api.ap-northeast-1.amazonaws.com/prod',
+        region: 'ap-northeast-1',
+      },
       todosApi: {
         endpoint: 'https://bnxzbt7hua.execute-api.ap-northeast-1.amazonaws.com/prod',
         region: 'ap-northeast-1',
       },
-      // commentsApi: {
-      //   endpoint: 'https://xxxxxx.execute-api.ap-northeast-1.amazonaws.com/prod',
-      //   region: 'ap-northeast-1',
-      // },
+      commentsApi: {
+        endpoint: 'https://qgsxn3239i.execute-api.ap-northeast-1.amazonaws.com/prod',
+        region: 'ap-northeast-1',
+      },
     },
   },
 });
