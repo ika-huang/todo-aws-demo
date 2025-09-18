@@ -7,11 +7,14 @@ import { APIGatewayEvent } from 'aws-lambda';
 import {
   registerInput,
   registerSchema,
-  validateErrorMessage,
 } from '../schemas/auth';
-import { z } from 'zod';
+import { lambdaResponse } from '../utils/response';
 
 const client = new CognitoIdentityProviderClient({});
+const {
+  response,
+  errorResponse,
+} = new lambdaResponse();
 
 export async function main(event: APIGatewayEvent) {
   try {
@@ -28,19 +31,8 @@ export async function main(event: APIGatewayEvent) {
       UserPoolId: process.env.USER_POOL_ID,
       Username: body.email,
     }));
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: 'User registered', data: result }),
-    };
+    return response({ message: 'User registered', data: result });
   } catch (err: unknown) {
-  if (err instanceof z.ZodError) {
-    return validateErrorMessage(err);
-  }
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        message: err instanceof Error ? err.message : 'some error happened'
-      }),
-    };
+    return errorResponse(err);
   }
 }

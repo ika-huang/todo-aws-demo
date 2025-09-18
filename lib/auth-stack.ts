@@ -5,6 +5,7 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import {
   RestApi,
   LambdaIntegration,
+  Cors,
 } from 'aws-cdk-lib/aws-apigateway';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import {
@@ -89,6 +90,11 @@ export class AuthStack extends cdk.Stack {
     // apigateway
     this.authApi = new RestApi(this, 'AuthApi', {
       restApiName: `${process.env.APP_STACK_NAME}-AuthService`,
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: Cors.DEFAULT_HEADERS,
+      },
     });
     const authResource = this.authApi.root.addResource('auth');
     authResource.addResource('register').addMethod(
