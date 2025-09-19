@@ -37,3 +37,10 @@ new libStack.CommentStack(app, 'CommentStack', {
   todoTable: databaseStack.todoTable,
   userPool: authStack.userPool,
 });
+
+new libStack.FrontendStack(app, 'FrontendStack', {
+  env: {
+    account: process.env.CDK_DEPLOY_ACCOUNT,
+    region: process.env.CDK_DEPLOY_REGION,
+  },
+});

@@ -3,6 +3,7 @@ import { AuthStack } from './auth-stack';
 import { CommentStack } from './comment-stack';
 import { DatabaseStack } from './database-stack';
 import { ApiGatewayStack } from './api-gateway-stack';
+import { FrontendStack } from './frontend-stack';
 
 export const libStack = {
   TodoStack,
@@ -10,4 +11,5 @@ export const libStack = {
   CommentStack,
   DatabaseStack,
   ApiGatewayStack,
+  FrontendStack,
 }
