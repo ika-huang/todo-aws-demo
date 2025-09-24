@@ -44,3 +44,7 @@ new libStack.FrontendStack(app, 'FrontendStack', {
     region: process.env.CDK_DEPLOY_REGION,
   },
 });
+
+new libStack.GraphqlStack(app, 'GraphqlStack', {
+  userPool: authStack.userPool,
+});
