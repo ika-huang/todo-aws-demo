@@ -1,0 +1,30 @@
+type Todo {
+  id: ID!
+  userId: String!
+  title: String!
+  description: String
+  createdAt: AWSTimestamp!
+  updatedAt: AWSTimestamp!
+}
+
+input CreateTodoInput {
+  title: String!
+  description: String
+}
+
+input UpdateTodoInput {
+  id: ID!
+  title: String
+  description: String
+}
+
+type Query {
+  getTodo(id: ID!): Todo
+  listTodos: [Todo!]!
+}
+
+type Mutation {
+  createTodo(createTodoInput: CreateTodoInput!, userId: String): Todo
+  updateTodo(updateTodoInput: UpdateTodoInput!): Boolean
+  deleteTodo(id: ID!): Boolean
+}

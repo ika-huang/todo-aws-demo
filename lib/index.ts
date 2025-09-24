@@ -4,6 +4,7 @@ import { CommentStack } from './comment-stack';
 import { DatabaseStack } from './database-stack';
 import { ApiGatewayStack } from './api-gateway-stack';
 import { FrontendStack } from './frontend-stack';
+import { GraphqlStack } from './graphql-stack';
 
 export const libStack = {
   TodoStack,
@@ -12,4 +13,5 @@ export const libStack = {
   DatabaseStack,
   ApiGatewayStack,
   FrontendStack,
+  GraphqlStack,
 }
