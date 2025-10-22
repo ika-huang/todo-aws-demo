@@ -2,20 +2,30 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as appsync from 'aws-cdk-lib/aws-appsync';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import {
+  Vpc,
+  SubnetType,
+} from 'aws-cdk-lib/aws-ec2';
+import { DatabaseCluster } from 'aws-cdk-lib/aws-rds';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 
 interface GraphqlStackProps extends cdk.StackProps {
   userPool: UserPool;
+  vpc: Vpc;
+  dbCluster: DatabaseCluster;
+  databaseSecret: Secret;
 }
 
 export class GraphqlStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GraphqlStackProps) {
     super(scope, id, props);
 
-    const { userPool } = props;
+    const { userPool, vpc, dbCluster, databaseSecret } = props;
 
     // 建立 AppSync API
     const api = new appsync.GraphqlApi(this, 'TodoApi', {
@@ -52,6 +62,35 @@ export class GraphqlStack extends cdk.Stack {
       },
     });
 
+    const appSyncRdsResolver = new NodejsFunction(this, 'AppSyncRdsResolver', {
+      runtime: Runtime.NODEJS_18_X,
+      // entry: 'lambda/handler.ts',
+      entry: 'lambda/rds/appsync/main.ts',
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(10),
+      vpc: vpc, 
+      vpcSubnets: { 
+        subnetType: SubnetType.PRIVATE_WITH_EGRESS 
+      },
+      environment: {
+        DB_CLUSTER_ARN: dbCluster.clusterArn,
+        DB_SECRET_ARN: databaseSecret.secretArn,
+        DB_NAME: 'appdb',
+      },
+      initialPolicy: [
+        new PolicyStatement({
+          actions: [
+            'ec2:CreateNetworkInterface',
+            'ec2:DeleteNetworkInterface',
+            'ec2:DescribeNetworkInterfaces',
+          ],
+          resources: [
+            '*'
+          ],
+        }),
+      ],
+    });
+
     // 建立 Lambda
     // const todoLambda = new lambda.Function(this, 'TodoLambda', {
     //   runtime: lambda.Runtime.NODEJS_18_X,
@@ -62,33 +101,53 @@ export class GraphqlStack extends cdk.Stack {
     //   },
     // });
 
+    // permission
     todoTable.grantReadWriteData(todoLambda);
+    dbCluster.grantDataApiAccess(appSyncRdsResolver);
+    databaseSecret.grantRead(appSyncRdsResolver);
 
+    // todo
     const lambdaDs = api.addLambdaDataSource('LambdaDatasource', todoLambda);
 
     lambdaDs.createResolver('QueryLambdaGetTodoResolver', {
       typeName: 'Query',
       fieldName: 'getTodo',
     });
-
     lambdaDs.createResolver('QueryLambdaListTodosResolver', {
       typeName: 'Query',
       fieldName: 'listTodos',
     });
-
     lambdaDs.createResolver('MutationLambdaCreateTodoResolver', {
       typeName: 'Mutation',
       fieldName: 'createTodo',
     });
-
     lambdaDs.createResolver('MutationLambdaUpdateTodoResolver', {
       typeName: 'Mutation',
       fieldName: 'updateTodo',
     });
-
     lambdaDs.createResolver('MutationLambdaDeleteTodoResolver', {
       typeName: 'Mutation',
       fieldName: 'deleteTodo',
+    });
+
+    // rds
+    const rdsLambdaDataSource = api.addLambdaDataSource('LambdaDataSource', appSyncRdsResolver);
+
+    rdsLambdaDataSource.createResolver('QueryLambdaListItemsResolver',{
+      typeName: 'Query',
+      fieldName: 'listItems',
+    });
+    rdsLambdaDataSource.createResolver('MutationLambdaCreateItemResolver',{
+      typeName: 'Mutation',
+      fieldName: 'createItem',
+    });
+    rdsLambdaDataSource.createResolver('MutationLambdaUpdateItemResolver',{
+      typeName: 'Mutation',
+      fieldName: 'updateItem',
+    });
+    rdsLambdaDataSource.createResolver('MutationLambdaDeleteItemResolver', { 
+      typeName: 'Mutation', 
+      fieldName: 'deleteItem',
     });
 
     // 加入 DataSource

@@ -7,6 +7,28 @@ type Todo {
   updatedAt: AWSTimestamp!
 }
 
+type Item {
+  id: ID!
+  name: String!
+  description: String
+  value: Int
+  createdAt: Float!
+  updatedAt: Float
+}
+
+input CreateItemInput {
+  name: String!
+  description: String!
+  value: Int!
+}
+
+input UpdateItemInput {
+  id: ID!
+  name: String
+  description: String
+  value: Int
+}
+
 input CreateTodoInput {
   title: String!
   description: String
@@ -21,10 +43,14 @@ input UpdateTodoInput {
 type Query {
   getTodo(id: ID!): Todo
   listTodos: [Todo!]!
+  listItems: [Item!]!
 }
 
 type Mutation {
   createTodo(createTodoInput: CreateTodoInput!, userId: String): Todo
   updateTodo(updateTodoInput: UpdateTodoInput!): Boolean
   deleteTodo(id: ID!): Boolean
+  createItem(createItemInput: CreateItemInput): Item!
+  updateItem(updateItemInput: UpdateItemInput): Item!
+  deleteItem(id: ID!): Item
 }
