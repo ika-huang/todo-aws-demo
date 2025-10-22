@@ -47,4 +47,9 @@ new libStack.FrontendStack(app, 'FrontendStack', {
 
 new libStack.GraphqlStack(app, 'GraphqlStack', {
   userPool: authStack.userPool,
+  vpc: databaseStack.vpc,
+  dbCluster: databaseStack.dbCluster,
+  databaseSecret: databaseStack.databaseSecret,
 });
+
+app.synth();
